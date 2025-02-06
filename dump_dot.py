@@ -42,31 +42,30 @@ sources = [
   "topic:sensing/gnss/ublox/nav_sat_fix",
 ]
 
-def descendant_subgraph(graph, node):
-  return nx.subgraph(graph, nx.descendants(graph, node).union({node}))
-
-def ancestor_subgraph(graph, node):
-  return nx.subgraph(graph, nx.ancestors(graph, node).union({node}))
-
 def src2dst_subgraph(graph, src, dst):
-  return nx.intersection(descendant_subgraph(graph, src), ancestor_subgraph(graph, dst))
+  dst_anc = nx.ancestors(graph, dst)
+  src_dsc = nx.descendants(graph, src)
+  return nx.subgraph(graph, dst_anc.intersection(src_dsc).union({src, dst}))
 
 subgraphs = {}
+subgraph_nodes = set()
+subgraphs[f"all_sources -> {target}"] = None # so that its first in the list
+subgraphs[f"full"] = graph
 for source in sources:
   g = src2dst_subgraph(graph, source, target)
+  subgraph_nodes.update(set(g.nodes()))
   subgraphs[f"{source} -> {target}"] = g
   src_node = g.nodes[source]
   dst_node = g.nodes[target]
   src_node["x"], src_node["y"] = -10000, 0
   dst_node["x"], dst_node["y"] = 10000, 0
-subgraphs[f"all_sources -> {target}"] = nx.compose_all(graph for source, graph in subgraphs.items())
-subgraphs[f"full"] = graph
+subgraphs[f"all_sources -> {target}"] = nx.subgraph(graph, subgraph_nodes)
 
 def node_color(graph, node):
   root_color = "rgb(0,255,0)"
   dst_color = "rgb(255,0,0)"
-  node_color = "rgb(0,255,255)"
-  topic_color = "rgb(0,0,255)"
+  node_color = "rgb(0,0,255)"
+  topic_color = "rgb(128,0,255)"
   
   return dst_color if node == target else root_color if len(graph.in_edges(node)) == 0 else node_color if node.startswith("node:") else topic_color
 
