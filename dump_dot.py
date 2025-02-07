@@ -43,8 +43,12 @@ sources = [
 ]
 
 def src2dst_subgraph(graph, src, dst):
-  dst_anc = nx.ancestors(graph, dst)
-  src_dsc = nx.descendants(graph, src)
+  # construct graph with dst outgoing edges and src incoming edges removed
+  aug_graph = graph.copy()
+  aug_graph.remove_edges_from([ e for e in aug_graph.out_edges(dst) ])
+  aug_graph.remove_edges_from([ e for e in aug_graph.in_edges(src) ])
+  dst_anc = nx.ancestors(aug_graph, dst)
+  src_dsc = nx.descendants(aug_graph, src)
   return nx.subgraph(graph, dst_anc.intersection(src_dsc).union({src, dst}))
 
 subgraphs = {}
@@ -86,7 +90,7 @@ def to_gravis_graph(name, graph):
       "arrow_size": 15,
       "background_color": "white",
       "edge_size": 2,
-      "node_size": 20
+      "node_size": 5
     },
     "nodes": dict((node, {
       "metadata": {
@@ -102,9 +106,9 @@ def to_gravis_graph(name, graph):
   for node, data in gvg["graph"]["nodes"].items():
     meta = data["metadata"]
     if node == target:
-      meta["x"] = 10000
+      meta["x"] = 6000
     if len(graph.in_edges(node)) == 0:
-      meta["x"] = -10000
+      meta["x"] = -6000
   return gvg
 
 # generate gravis html
@@ -118,10 +122,13 @@ fig = gv.d3(
   links_force_distance=300,
   many_body_force_strength=-850,
   use_y_positioning_force=True,
-  y_positioning_force_strength=0.05,
+  y_positioning_force_strength=0.01,
   edge_size_data_source='weight',
-  edge_curvature=0.2,
-  zoom_factor=0.2
+  edge_curvature=0.1,
+  zoom_factor=0.2,
+  node_hover_neighborhood=True,
+  node_drag_fix=True,
+  use_centering_force=False
 )
 if os.path.exists("out.html"): os.remove("out.html")
 with open("out.html", "w", encoding="utf-8") as file:
