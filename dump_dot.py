@@ -107,8 +107,8 @@ def node_tooltip(graph, node, dist):
     f"component: {node.split(":")[1].split("/")[0]}",
     f"indeg: {len(graph.in_edges(node))}",
     f"outdeg: {len(graph.out_edges(node))}",
-    f"sink distance: {min(dist[node][sink] for sink in graph if (len(graph.out_edges(sink)) == 0) and node in dist and sink in dist[node])}",
-    f"source distance: {min(dist[source][node] for source in graph if (len(graph.in_edges(source)) == 0) and source in dist and node in dist[source])}"
+    f"source distance: {min(dist[source][node] for source in graph if (len(graph.in_edges(source)) == 0) and source in dist and node in dist[source])}",
+    f"sink distance: {min(dist[node][sink] for sink in graph if (len(graph.out_edges(sink)) == 0) and node in dist and sink in dist[node])}"
   ])
 
 
