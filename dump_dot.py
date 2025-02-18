@@ -24,6 +24,7 @@ def rename(node):
   return ("node:" if node.startswith("n___") else "topic:") + node.removeprefix("n___").removeprefix("topic_3A__").replace("__", "/")
 mapping = dict([ (node, rename(node)) for node in graph.nodes() ])
 graph = nx.relabel_nodes(graph, mapping)
+# graph = nx.subgraph(graph, set(graph.nodes()).difference({"topic:diagnostics", "topic:service_log"}))
 
 for name in graph.nodes():
   print(name)
@@ -31,7 +32,8 @@ for src, dst in graph.edges():
   print(f"{src} -> {dst}")
 
 # construct subgraphs of nodes on chain from sources to target
-target = "node:planning/scenario_planning/lane_driving/motion_planning/obstacle_cruise_planner"
+# target = "node:planning/scenario_planning/lane_driving/motion_planning/obstacle_cruise_planner"
+target = "node:control/autonomous_emergency_braking"
 sources = [
   "topic:sensing/lidar/top/velodyne_packets",
   "topic:sensing/lidar/left/velodyne_packets",
@@ -103,17 +105,19 @@ def node_size(graph, node):
   return (1 + 0.25 * math.sqrt(len(graph.in_edges(node)) + len(graph.out_edges(node)))) * 15
 
 def node_tooltip(graph, node, dist):
+  default = [1000000000, 1000000000]
   return "\n".join([
     f"component: {node.split(":")[1].split("/")[0]}",
     f"indeg: {len(graph.in_edges(node))}",
     f"outdeg: {len(graph.out_edges(node))}",
-    f"source distance: {min(dist[source][node] for source in graph if (len(graph.in_edges(source)) == 0) and source in dist and node in dist[source])}",
-    f"sink distance: {min(dist[node][sink] for sink in graph if (len(graph.out_edges(sink)) == 0) and node in dist and sink in dist[node])}"
+    f"source distance: {min(*([dist[source][node] for source in graph if (len(graph.in_edges(source)) == 0) and source in dist and node in dist[source]] + default))}",
+    f"sink distance: {min(*([dist[node][sink] for sink in graph if (len(graph.out_edges(sink)) == 0) and node in dist and sink in dist[node]] + default))}"
   ])
 
 
 # convert to gravis graph
 def to_gravis_graph(name, graph):
+  print(f"converting subgraph {name} to gravis graph")
   dist = dict(nx.all_pairs_shortest_path_length(graph))
   gvg = { "graph": {
     "label": name,
